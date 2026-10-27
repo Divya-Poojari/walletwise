@@ -1,6 +1,6 @@
-# LedgerFlow — API Documentation
+# WalletWise — API Documentation
 
-REST API for account management, credit/debit transactions, transaction history, balance lookup, and atomic account-to-account transfers.
+WalletWise provides REST APIs for account management, individual balance lookup, credit/debit transactions, transaction history, and transfers between accounts.
 
 ## Base URL
 
@@ -8,21 +8,21 @@ Local development:
 
 `http://localhost:4000`
 
-## API Overview
+All request bodies must contain valid JSON. Responses use JSON.
+
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/health` | Check API health |
 | POST | `/api/accounts` | Create an account |
-| GET | `/api/accounts` | List accounts and current balances |
-| GET | `/api/accounts/:id` | Get account details and balance |
-| GET | `/api/accounts/:id/balance` | Fetch a single account's balance |
+| GET | `/api/accounts` | List accounts |
+| GET | `/api/accounts/:id` | Get account details |
+| GET | `/api/accounts/:id/balance` | Get an account's current balance |
 | POST | `/api/transactions` | Create a credit or debit |
 | GET | `/api/transactions` | List transactions with pagination |
 | GET | `/api/transactions/:id` | Get transaction details |
 | POST | `/api/transfers` | Transfer funds between accounts |
-
-All request bodies must contain valid JSON. The API returns JSON responses.
 
 ---
 
@@ -32,7 +32,7 @@ All request bodies must contain valid JSON. The API returns JSON responses.
 
 Checks whether the API is responding.
 
-**Successful response — `200 OK`**
+**Response: `200 OK`**
 
 ```json
 {
@@ -46,7 +46,7 @@ Checks whether the API is responding.
 
 ### `POST /api/accounts`
 
-Creates an account with a zero opening balance.
+Creates a new account with an initial balance of zero.
 
 **Request body**
 
@@ -56,16 +56,16 @@ Creates an account with a zero opening balance.
 }
 ```
 
-| Field | Type | Required | Rules |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | String | Yes | Trimmed, 1–120 characters |
+| `name` | String | Yes | Account name, 1–120 characters after trimming |
 
-**Successful response — `201 Created`**
+**Response: `201 Created`**
 
 ```json
 {
   "data": {
-    "id": "11111111-1111-4111-8111-111111111111",
+    "id": "ACCOUNT_UUID",
     "name": "Everyday Account",
     "balance": "0.00",
     "created_at": "2026-10-27T08:00:00.000Z"
@@ -73,11 +73,13 @@ Creates an account with a zero opening balance.
 }
 ```
 
-The UUID and timestamp above are illustrative.
+The UUID and timestamp are illustrative.
 
-**Validation:** Invalid or missing names return `400 VALIDATION_ERROR`.
+**Errors**
 
-**Note:** Account names are not required to be unique. Account identity is determined by its UUID.
+- `400 VALIDATION_ERROR` — missing or invalid account name.
+
+**Note:** Account names are not required to be unique. Use the account UUID to identify an account.
 
 ---
 
@@ -85,15 +87,15 @@ The UUID and timestamp above are illustrative.
 
 ### `GET /api/accounts`
 
-Returns all accounts, including their current balances, ordered by creation time with newest accounts first.
+Returns the accounts and their current balances.
 
-**Successful response — `200 OK`**
+**Response: `200 OK`**
 
 ```json
 {
   "data": [
     {
-      "id": "11111111-1111-4111-8111-111111111111",
+      "id": "ACCOUNT_UUID",
       "name": "Everyday Account",
       "balance": "1500.00",
       "created_at": "2026-10-27T08:00:00.000Z"
@@ -102,7 +104,7 @@ Returns all accounts, including their current balances, ordered by creation time
 }
 ```
 
-An empty account list returns `"data": []`.
+An empty account list returns an empty `data` array.
 
 ---
 
@@ -112,16 +114,18 @@ An empty account list returns `"data": []`.
 
 Returns the details and current balance of a specific account.
 
-**Example**
+**Example request**
 
-`GET /api/accounts/11111111-1111-4111-8111-111111111111`
+```http
+GET /api/accounts/ACCOUNT_UUID
+```
 
-**Successful response — `200 OK`**
+**Response: `200 OK`**
 
 ```json
 {
   "data": {
-    "id": "11111111-1111-4111-8111-111111111111",
+    "id": "ACCOUNT_UUID",
     "name": "Everyday Account",
     "balance": "1500.00",
     "created_at": "2026-10-27T08:00:00.000Z"
@@ -129,10 +133,10 @@ Returns the details and current balance of a specific account.
 }
 ```
 
-**Possible errors**
+**Errors**
 
-- `400 INVALID_ACCOUNT_ID` — the ID is not a valid UUID.
-- `404 ACCOUNT_NOT_FOUND` — no account exists with that UUID.
+- `400 INVALID_ACCOUNT_ID` — invalid UUID format.
+- `404 ACCOUNT_NOT_FOUND` — account does not exist.
 
 ---
 
@@ -140,18 +144,20 @@ Returns the details and current balance of a specific account.
 
 ### `GET /api/accounts/:id/balance`
 
-Fetches the current balance of one account separately from its other details.
+Returns the current balance of an individual account without requiring the client to retrieve its other details.
 
-**Example**
+**Example request**
 
-`GET /api/accounts/11111111-1111-4111-8111-111111111111/balance`
+```http
+GET /api/accounts/ACCOUNT_UUID/balance
+```
 
-**Successful response — `200 OK`**
+**Response: `200 OK`**
 
 ```json
 {
   "data": {
-    "account_id": "11111111-1111-4111-8111-111111111111",
+    "account_id": "ACCOUNT_UUID",
     "balance": "1500.00"
   }
 }
@@ -160,11 +166,11 @@ Fetches the current balance of one account separately from its other details.
 | Field | Type | Description |
 |---|---|---|
 | `account_id` | UUID string | ID of the requested account |
-| `balance` | Decimal string | Current account balance |
+| `balance` | Decimal string | Current balance |
 
-**Possible errors**
+### Invalid account ID
 
-Invalid account ID — `400 Bad Request`
+**Response: `400 Bad Request`**
 
 ```json
 {
@@ -175,7 +181,9 @@ Invalid account ID — `400 Bad Request`
 }
 ```
 
-Account does not exist — `404 Not Found`
+### Account does not exist
+
+**Response: `404 Not Found`**
 
 ```json
 {
@@ -186,7 +194,7 @@ Account does not exist — `404 Not Found`
 }
 ```
 
-Use the account UUID returned by `POST /api/accounts` or `GET /api/accounts` when testing this endpoint.
+Use an actual account UUID returned by the create-account or list-accounts endpoint.
 
 ---
 
@@ -194,15 +202,13 @@ Use the account UUID returned by `POST /api/accounts` or `GET /api/accounts` whe
 
 ### `POST /api/transactions`
 
-Creates an immutable ledger entry and updates the account balance in the same database transaction.
+Records a credit or debit and updates the account balance as part of the same database transaction.
 
 ### Credit example
 
-**Request body**
-
 ```json
 {
-  "account_id": "11111111-1111-4111-8111-111111111111",
+  "account_id": "ACCOUNT_UUID",
   "type": "credit",
   "amount": 1000.00,
   "description": "Salary deposit",
@@ -214,7 +220,7 @@ Creates an immutable ledger entry and updates the account balance in the same da
 
 ```json
 {
-  "account_id": "11111111-1111-4111-8111-111111111111",
+  "account_id": "ACCOUNT_UUID",
   "type": "debit",
   "amount": 250.00,
   "description": "Utility bill",
@@ -222,21 +228,21 @@ Creates an immutable ledger entry and updates the account balance in the same da
 }
 ```
 
-| Field | Type | Required | Rules |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `account_id` | UUID string | Yes | Must identify an existing account |
+| `account_id` | UUID string | Yes | Existing account ID |
 | `type` | String | Yes | `credit` or `debit` |
-| `amount` | Number | Yes | Positive, maximum two decimal places |
-| `description` | String | No | Maximum 500 characters; defaults to empty |
-| `reference_id` | String | Yes | Non-empty, maximum 120 characters; unique per account |
+| `amount` | Number | Yes | Positive amount with at most two decimal places |
+| `description` | String | No | Description, maximum 500 characters |
+| `reference_id` | String | Yes | Non-empty reference, maximum 120 characters |
 
-**Successful response — `201 Created`**
+**Response: `201 Created`**
 
 ```json
 {
   "data": {
-    "id": "22222222-2222-4222-8222-222222222222",
-    "account_id": "11111111-1111-4111-8111-111111111111",
+    "id": "TRANSACTION_UUID",
+    "account_id": "ACCOUNT_UUID",
     "type": "credit",
     "amount": "1000.00",
     "description": "Salary deposit",
@@ -246,45 +252,61 @@ Creates an immutable ledger entry and updates the account balance in the same da
 }
 ```
 
-**Possible errors**
+The example values are illustrative.
 
-- `400 VALIDATION_ERROR` — invalid body or field values.
+**Errors**
+
+- `400 VALIDATION_ERROR` — invalid request data.
 - `404 ACCOUNT_NOT_FOUND` — account does not exist.
-- `409 DUPLICATE_TRANSACTION` — reference ID already exists for the account.
+- `409 DUPLICATE_TRANSACTION` — duplicate reference for the account.
 - `422 INSUFFICIENT_BALANCE` — debit exceeds the available balance.
 
-A rejected debit does not create a transaction or change the balance.
+A rejected debit must not create a ledger entry or change the balance.
 
 ---
 
-## 7. List Transactions with Pagination
+## 7. List Transactions and Pagination
 
 ### `GET /api/transactions`
 
-Returns transaction history sorted newest first by `created_at`, with transaction ID used as a tie-breaker.
+Returns transaction history in newest-first order.
 
 **Query parameters**
 
-| Parameter | Required | Default | Rules |
+| Parameter | Required | Default | Description |
 |---|---|---|---|
-| `page` | No | `1` | Integer greater than or equal to 1 |
-| `limit` | No | `10` | Integer between 1 and 100 |
-| `account_id` | No | None | Valid account UUID to filter results |
+| `page` | No | `1` | Page number, at least 1 |
+| `limit` | No | `10` | Records per page, between 1 and 100 |
+| `account_id` | No | None | Filter by account UUID |
 
-**Examples**
+### Examples
 
-- First page: `/api/transactions`
-- Second page: `/api/transactions?page=2&limit=10`
-- Account history: `/api/transactions?account_id=11111111-1111-4111-8111-111111111111&page=1&limit=10`
+First page:
 
-**Successful response — `200 OK`**
+```http
+GET /api/transactions
+```
+
+Second page with 10 records per page:
+
+```http
+GET /api/transactions?page=2&limit=10
+```
+
+Transactions for a specific account:
+
+```http
+GET /api/transactions?account_id=ACCOUNT_UUID&page=1&limit=10
+```
+
+**Response: `200 OK`**
 
 ```json
 {
   "data": [
     {
-      "id": "22222222-2222-4222-8222-222222222222",
-      "account_id": "11111111-1111-4111-8111-111111111111",
+      "id": "TRANSACTION_UUID",
+      "account_id": "ACCOUNT_UUID",
       "type": "credit",
       "amount": "1000.00",
       "description": "Salary deposit",
@@ -303,28 +325,36 @@ Returns transaction history sorted newest first by `created_at`, with transactio
 }
 ```
 
-When there are no matching transactions, `data` is an empty array and `total_records` and `total_pages` are zero.
+The response values are examples. Transactions are ordered newest first by `created_at`.
 
-**Possible errors**
+When there are no matching records, `data` is empty and the total record and page counts are zero.
+
+**Errors**
 
 - `400 INVALID_PAGINATION` — invalid page or limit.
-- `400 INVALID_ACCOUNT_ID` — invalid `account_id` filter.
+- `400 INVALID_ACCOUNT_ID` — invalid account filter UUID.
 
 ---
 
-## 8. Get a Transaction
+## 8. Get Transaction Details
 
 ### `GET /api/transactions/:id`
 
-Returns one transaction by its UUID.
+Returns an individual transaction by its UUID.
 
-**Successful response — `200 OK`**
+**Example request**
+
+```http
+GET /api/transactions/TRANSACTION_UUID
+```
+
+**Response: `200 OK`**
 
 ```json
 {
   "data": {
-    "id": "22222222-2222-4222-8222-222222222222",
-    "account_id": "11111111-1111-4111-8111-111111111111",
+    "id": "TRANSACTION_UUID",
+    "account_id": "ACCOUNT_UUID",
     "type": "credit",
     "amount": "1000.00",
     "description": "Salary deposit",
@@ -334,12 +364,12 @@ Returns one transaction by its UUID.
 }
 ```
 
-**Possible errors**
+**Errors**
 
 - `400 INVALID_TRANSACTION_ID` — invalid transaction UUID.
 - `404 TRANSACTION_NOT_FOUND` — transaction does not exist.
 
-Transactions are immutable. Attempts to update or delete a transaction using `PUT`, `PATCH`, or `DELETE` on `/api/transactions/:id` return `405 TRANSACTION_IMMUTABLE`.
+Transactions are immutable. The API does not support updating or deleting transaction records.
 
 ---
 
@@ -347,36 +377,36 @@ Transactions are immutable. Attempts to update or delete a transaction using `PU
 
 ### `POST /api/transfers`
 
-Transfers money from one account to another atomically. The source debit, destination credit, both balance changes, and both ledger entries commit together or roll back together.
+Transfers money from a source account to a destination account. The source debit, destination credit, balance changes, and corresponding ledger entries are performed atomically.
 
 **Request body**
 
 ```json
 {
-  "source_account_id": "11111111-1111-4111-8111-111111111111",
-  "destination_account_id": "33333333-3333-4333-8333-333333333333",
+  "source_account_id": "SOURCE_ACCOUNT_UUID",
+  "destination_account_id": "DESTINATION_ACCOUNT_UUID",
   "amount": 300.00,
   "reference_id": "transfer-001",
   "description": "Transfer to savings"
 }
 ```
 
-| Field | Type | Required | Rules |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `source_account_id` | UUID string | Yes | Must identify an existing account |
-| `destination_account_id` | UUID string | Yes | Must identify a different existing account |
-| `amount` | Number | Yes | Positive, maximum two decimal places |
-| `reference_id` | String | Yes | Non-empty, maximum 120 characters |
-| `description` | String | No | Maximum 500 characters; defaults to `Transfer` |
+| `source_account_id` | UUID string | Yes | Existing source account |
+| `destination_account_id` | UUID string | Yes | Existing destination account, different from source |
+| `amount` | Number | Yes | Positive amount with at most two decimal places |
+| `reference_id` | String | Yes | Non-empty transfer reference, maximum 120 characters |
+| `description` | String | No | Transfer description, maximum 500 characters |
 
-**Successful response — `201 Created`**
+**Response: `201 Created`**
 
 ```json
 {
   "data": {
     "debit": {
-      "id": "44444444-4444-4444-8444-444444444444",
-      "account_id": "11111111-1111-4111-8111-111111111111",
+      "id": "DEBIT_TRANSACTION_UUID",
+      "account_id": "SOURCE_ACCOUNT_UUID",
       "type": "debit",
       "amount": "300.00",
       "description": "Transfer to savings",
@@ -384,8 +414,8 @@ Transfers money from one account to another atomically. The source debit, destin
       "created_at": "2026-10-27T08:10:00.000Z"
     },
     "credit": {
-      "id": "55555555-5555-4555-8555-555555555555",
-      "account_id": "33333333-3333-4333-8333-333333333333",
+      "id": "CREDIT_TRANSACTION_UUID",
+      "account_id": "DESTINATION_ACCOUNT_UUID",
       "type": "credit",
       "amount": "300.00",
       "description": "Transfer to savings",
@@ -396,21 +426,25 @@ Transfers money from one account to another atomically. The source debit, destin
 }
 ```
 
-Transfer reference IDs are suffixed with `:debit` and `:credit` for the corresponding ledger entries.
+The response values are illustrative. The API uses corresponding debit and credit reference IDs for the transfer entries.
 
-**Possible errors**
+**Errors**
 
-- `400 VALIDATION_ERROR` — invalid request body.
-- `400 INVALID_TRANSFER` — source and destination accounts are identical.
+- `400 VALIDATION_ERROR` — invalid request data.
+- `400 INVALID_TRANSFER` — source and destination are the same account.
 - `404 ACCOUNT_NOT_FOUND` — source or destination account does not exist.
-- `409 DUPLICATE_TRANSACTION` — transfer reference has already been used for the corresponding account entries.
-- `422 INSUFFICIENT_BALANCE` — source account has insufficient funds.
+- `409 DUPLICATE_TRANSACTION` — duplicate reference.
+- `422 INSUFFICIENT_BALANCE` — insufficient source-account funds.
+
+A failed transfer must leave both balances unchanged and must not leave a partial transfer in the ledger.
 
 ---
 
 ## Error Response Format
 
-Errors use a consistent structure:
+Errors use a consistent JSON structure.
+
+**Example**
 
 ```json
 {
@@ -421,44 +455,48 @@ Errors use a consistent structure:
 }
 ```
 
-Validation errors may also include a `details` field.
+Validation errors may include additional details.
 
-### Error code reference
+### Error codes
 
 | HTTP status | Error code | Meaning |
 |---|---|---|
-| `400` | `VALIDATION_ERROR` | Request body failed validation |
-| `400` | `INVALID_ACCOUNT_ID` | Account UUID is invalid |
-| `400` | `INVALID_TRANSACTION_ID` | Transaction UUID is invalid |
-| `400` | `INVALID_PAGINATION` | Pagination parameters are invalid |
-| `400` | `INVALID_TRANSFER` | Source and destination accounts are the same |
-| `400` | `INVALID_JSON` | Request body contains invalid JSON |
-| `400` | `INVALID_REFERENCE` | Referenced database record is invalid |
+| `400` | `VALIDATION_ERROR` | Request validation failed |
+| `400` | `INVALID_ACCOUNT_ID` | Invalid account UUID |
+| `400` | `INVALID_TRANSACTION_ID` | Invalid transaction UUID |
+| `400` | `INVALID_PAGINATION` | Invalid pagination parameters |
+| `400` | `INVALID_TRANSFER` | Source and destination accounts are identical |
+| `400` | `INVALID_JSON` | Invalid JSON request body |
 | `404` | `ACCOUNT_NOT_FOUND` | Account does not exist |
 | `404` | `TRANSACTION_NOT_FOUND` | Transaction does not exist |
 | `404` | `ROUTE_NOT_FOUND` | API route does not exist |
-| `405` | `TRANSACTION_IMMUTABLE` | Transaction update/delete is prohibited |
-| `409` | `DUPLICATE_TRANSACTION` | Duplicate reference |
-| `422` | `INSUFFICIENT_BALANCE` | Account lacks sufficient funds |
+| `405` | `TRANSACTION_IMMUTABLE` | Transaction update or deletion is prohibited |
+| `409` | `DUPLICATE_TRANSACTION` | Duplicate transaction reference |
+| `422` | `INSUFFICIENT_BALANCE` | Insufficient available balance |
 | `500` | `INTERNAL_SERVER_ERROR` | Unexpected server error |
+
+The exact status and error code depend on the API's configured error handler and validation logic.
 
 ---
 
 ## Data Integrity
 
 - Account balances start at zero.
-- Money is stored using PostgreSQL `NUMERIC(18,2)`.
+- Monetary amounts are stored using PostgreSQL `NUMERIC(18,2)`.
 - Transaction amounts must be positive and have at most two decimal places.
-- Balance changes and corresponding ledger inserts occur within a database transaction.
+- Balance changes and corresponding ledger entries are performed within database transactions.
 - Account rows are locked during balance-changing operations to help prevent concurrent overspending.
-- Transfers lock both accounts and update both balances atomically.
+- Transfers update both accounts and create both ledger entries atomically.
 - Transaction reference IDs are unique per account.
-- Database constraints and a trigger protect transaction records from updates and deletions.
-- The API does not expose an endpoint to directly set an account balance or delete an account.
+- Database constraints and triggers protect transaction records against updates and deletions.
+- The API does not provide a direct balance-editing endpoint or account-deletion endpoint.
 
-## Notes
+## Assumptions and Limitations
 
-- Authentication and authorization are not implemented.
 - Account names are not required to be unique.
-- Currency conversion is not implemented; the UI currently formats balances in Indian rupees.
-- Use actual IDs returned by the API when testing examples.
+- Accounts start with a zero balance.
+- Authentication and authorization are not implemented.
+- Currency conversion is outside the current scope.
+- Transaction records are immutable.
+- Account deletion is not supported by the current API.
+
