@@ -1,43 +1,37 @@
-# LedgerFlow
+# WalletWise
 
-A full-stack account and transaction management application with balance tracking, credit/debit operations, transaction history, pagination, and atomic transfers between accounts.
+**A full-stack account and transaction management platform** built with React, TypeScript, Node.js, Express, and PostgreSQL.
+
+WalletWise helps users manage accounts, track balances, record credit and debit transactions, review transaction history, and transfer funds between accounts.
 
 ## Features
 
-- Create and list accounts with current balances.
-- Retrieve individual account details and check an account's balance separately.
+- Create and view accounts with current balances.
+- Look up an individual account's balance using its account ID.
 - Record credit and debit transactions.
-- Validate transaction amounts and prevent debits that exceed the available balance.
+- Prevent debits that exceed the available balance.
 - Transfer funds between accounts atomically.
-- Browse transaction history with pagination and newest-first ordering.
+- View transaction history with pagination and newest-first ordering.
 - Filter transactions by account.
+- Validate request data and return consistent API errors.
 - Preserve transaction history using immutable ledger records.
-- Return consistent API errors for invalid requests and missing records.
-- Use a React dashboard to manage accounts and transactions.
+- Run the backend and PostgreSQL using Docker Compose.
 
 ## Technology Stack
 
-### Backend
-- Node.js 22
-- TypeScript
-- Express
-- PostgreSQL 16
-- Zod for request validation
-
-### Frontend
-- React
-- TypeScript
-- Vite
-
-### Development and testing
-- Docker Compose
-- Vitest
-- PostgreSQL database constraints and triggers
+| Layer | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Backend | Node.js, TypeScript, Express |
+| Database | PostgreSQL |
+| Validation | Zod |
+| Containers | Docker, Docker Compose |
+| Tests | Vitest |
 
 ## Project Structure
 
 ```text
-.
+walletwise/
 ├── src/
 │   ├── app.ts
 │   ├── db.ts
@@ -49,62 +43,66 @@ A full-stack account and transaction management application with balance trackin
 ├── tests/
 │   └── validation.test.ts
 ├── frontend/
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── style.css
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── .env.example
-├── .gitignore
+│   └── src/
 ├── API_DOCUMENTATION.md
 ├── ASSUMPTIONS.md
 ├── Dockerfile
 ├── docker-compose.yml
 ├── package.json
-└── tsconfig.json
+└── README.md
 ```
 
 ## Prerequisites
 
-For the recommended Docker setup:
-
 - Git
 - Docker Desktop with Docker Compose
 - A modern web browser
+- Node.js and npm for running the frontend separately
 
-For running the frontend separately, Node.js and npm are also required.
-
-## Run with Docker Compose
+## Getting Started
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ledgerflow.git
-cd ledgerflow
+git clone https://github.com/Divya-Poojari/walletwise.git
+cd walletwise
 ```
 
-Replace the repository URL with your actual GitHub repository URL.
+### 2. Start the backend and database
 
-### 2. Start the API and database
+Make sure Docker Desktop is running, then execute:
 
 ```bash
 docker compose up --build
 ```
 
-Docker Compose builds the API image, starts PostgreSQL, waits for the database health check, and starts the backend API.
+Docker Compose builds the backend image, starts PostgreSQL, initializes the database schema, and starts the API.
 
-The database schema is initialized automatically when PostgreSQL creates a new data directory.
+The API is available at:
 
-### 3. Verify the API
+`http://localhost:4000`
 
-Health check:
+### 3. Start the frontend
 
-```text
-GET http://localhost:4000/health
+Open a second terminal from the project root:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
+
+Open the local URL printed by Vite, usually:
+
+`http://localhost:5173`
+
+The frontend is configured to communicate with the local API. If you change the API URL, update the frontend configuration accordingly.
+
+### 4. Verify the API
+
+Open this endpoint in your browser:
+
+`http://localhost:4000/health`
 
 Expected response:
 
@@ -114,124 +112,37 @@ Expected response:
 }
 ```
 
-API base URL:
-
-`http://localhost:4000`
-
-### 4. Start the frontend
-
-Open a second terminal from the repository root:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open the local URL printed by Vite, typically:
-
-`http://localhost:5173`
-
-By default, the frontend calls the API at `http://localhost:4000`. If the backend uses a different URL, configure `VITE_API_URL` according to the frontend's Vite configuration.
-
 ### 5. Stop the application
 
-In the terminal running Docker Compose, press `Ctrl+C`. Then run:
+Stop the running Compose process with `Ctrl+C`, then run:
 
 ```bash
 docker compose down
 ```
 
-This stops and removes the containers while preserving the named database volume.
+This preserves the database volume. To remove the containers and stored database volume, use `docker compose down -v`. **Warning:** this deletes the persisted local database data.
 
-To remove the database volume and its stored data as well, run:
-
-```bash
-docker compose down -v
-```
-
-**Warning:** Removing the volume permanently deletes the local database data.
-
-## Run the Backend Without Docker
-
-### Requirements
-
-- Node.js 22 or later
-- PostgreSQL 13 or later
-
-### 1. Create the database
-
-Create a PostgreSQL database named `walnut_transactions`.
-
-### 2. Configure environment variables
-
-Copy `.env.example` to `.env` and configure `DATABASE_URL` for your local PostgreSQL instance.
-
-For example:
-
-```env
-PORT=4000
-DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/walnut_transactions
-```
-
-Use your own database username and password. Do not commit `.env` to Git.
-
-### 3. Initialize the schema
-
-From the repository root, apply the database schema:
-
-```bash
-psql "$DATABASE_URL" -f db/schema.sql
-```
-
-Ensure the PostgreSQL client is installed and available on your PATH.
-
-### 4. Install dependencies and start the API
-
-```bash
-npm install
-npm run dev
-```
-
-For a production build:
-
-```bash
-npm run build
-npm start
-```
-
-## API Reference
+## API Overview
 
 Base URL: `http://localhost:4000`
 
-| Method | Endpoint | Purpose |
+| Method | Endpoint | Description |
 |---|---|---|
-| GET | `/health` | API health check |
-| POST | `/api/accounts` | Create account |
+| GET | `/health` | Check API health |
+| POST | `/api/accounts` | Create an account |
 | GET | `/api/accounts` | List accounts and balances |
 | GET | `/api/accounts/:id` | Get account details |
-| GET | `/api/accounts/:id/balance` | Get one account's balance |
-| POST | `/api/transactions` | Create credit/debit transaction |
-| GET | `/api/transactions` | Paginated transaction history |
+| GET | `/api/accounts/:id/balance` | Get an individual account balance |
+| POST | `/api/transactions` | Create a credit or debit transaction |
+| GET | `/api/transactions` | List transactions with pagination |
 | GET | `/api/transactions/:id` | Get transaction details |
-| POST | `/api/transfers` | Transfer funds atomically |
+| POST | `/api/transfers` | Transfer funds between accounts |
 
-Full request/response examples, validation rules, pagination details, and error codes are documented in [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md).
+See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for request examples, response formats, query parameters, and error codes.
 
-### Example: Create an account
+## Example: Check an Account Balance
 
-```http
-POST /api/accounts
-Content-Type: application/json
-```
-
-```json
-{
-  "name": "Everyday Account"
-}
-```
-
-### Example: Check a specific account's balance
+Request:
 
 ```http
 GET /api/accounts/ACCOUNT_UUID/balance
@@ -248,83 +159,74 @@ Successful response:
 }
 ```
 
-Replace `ACCOUNT_UUID` with a real account UUID returned by the API.
+Replace `ACCOUNT_UUID` with an actual account ID returned by the API.
 
-### Example: Create a credit transaction
+If the account does not exist, the API returns an appropriate `404 ACCOUNT_NOT_FOUND` response. Invalid UUID formats return `400 INVALID_ACCOUNT_ID`.
+
+## Example: Create a Credit Transaction
+
+```http
+POST /api/transactions
+Content-Type: application/json
+```
 
 ```json
 {
   "account_id": "ACCOUNT_UUID",
   "type": "credit",
   "amount": 1000.00,
-  "description": "Salary deposit",
-  "reference_id": "salary-001"
+  "description": "Deposit",
+  "reference_id": "deposit-001"
 }
 ```
 
-### Example: Transfer funds
+Use an existing account ID. See the API documentation for debit and transfer examples.
 
-```json
-{
-  "source_account_id": "SOURCE_ACCOUNT_UUID",
-  "destination_account_id": "DESTINATION_ACCOUNT_UUID",
-  "amount": 300.00,
-  "reference_id": "transfer-001",
-  "description": "Transfer to savings"
-}
-```
+## Data Integrity
 
-For additional examples and error responses, see the API documentation.
-
-## Data Integrity and Design
-
-- Each account starts with a zero balance.
-- Amounts must be positive and have no more than two decimal places.
-- Balance changes and corresponding ledger inserts execute within a database transaction.
-- Account rows are locked during balance-changing operations to help prevent concurrent overspending.
-- Transfers update both accounts and create both ledger entries atomically.
-- Transaction reference IDs are unique within an account.
-- Transactions cannot be updated or deleted through the API; database-level protection also prevents mutation.
-- Account balances are updated through validated credit, debit, and transfer operations rather than direct balance-editing endpoints.
+- Accounts start with a zero balance.
+- Transaction amounts must be positive and use no more than two decimal places.
+- Balance updates and ledger entries are performed within database transactions.
+- Transfers update both accounts and create corresponding ledger entries atomically.
+- Transactions are immutable.
+- Reference IDs are unique per account.
+- Account balances are changed through validated transaction operations rather than a direct balance-editing endpoint.
 
 ## Testing
 
-Run the backend test suite from the repository root:
+Install backend dependencies from the project root:
 
 ```bash
 npm install
+```
+
+Run the available test suite:
+
+```bash
 npm test
 ```
 
-To run tests in watch mode:
-
-```bash
-npm run test:watch
-```
-
-The included tests cover request validation. Manually or through additional integration tests, verify account creation, balance lookup, credit/debit behavior, insufficient funds, duplicate references, pagination, missing accounts, and atomic transfers.
+Check `package.json` for the test scripts configured in the repository. In addition to automated tests, verify account creation, individual balance lookup, credit/debit operations, insufficient funds, transaction pagination, missing-account errors, and transfers.
 
 ## Assumptions and Limitations
 
 - Account names are not required to be unique.
-- Accounts begin with zero balance; opening balances are not supported.
-- Amounts are stored to two decimal places.
-- Currency conversion is outside the current scope.
+- Accounts are created with a zero balance.
+- Transactions cannot be updated or deleted.
+- Account deletion is not supported by the current API.
 - Authentication and authorization are not implemented.
-- There is no account deletion endpoint.
-- Transactions are immutable.
-- Transfer operations create one debit entry and one credit entry with corresponding reference suffixes.
+- Currency conversion is outside the current scope.
 
-See [`ASSUMPTIONS.md`](./ASSUMPTIONS.md) for additional design decisions.
+See [ASSUMPTIONS.md](./ASSUMPTIONS.md) for additional design decisions.
 
 ## Future Improvements
 
-- Authentication and role-based authorization.
-- Automated API integration tests.
-- Idempotency keys for safer retries.
-- Improved audit and operational logging.
-- Deployment configuration for a hosted frontend, API, and PostgreSQL database.
+- Authentication and role-based access control.
+- Expanded API integration and concurrency tests.
+- Idempotency support for safely retrying requests.
+- Audit logging and monitoring.
+- Deployment of the frontend, backend API, and database.
 
 ## License
 
-No license has been specified. Add a `LICENSE` file if you intend to distribute this project under an open-source license.
+No license has been specified yet. Add a `LICENSE` file if you intend to distribute WalletWise under an open-source license.
